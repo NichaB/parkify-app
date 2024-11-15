@@ -1,5 +1,4 @@
 "use client";
-
 import React, { useState, useEffect } from 'react';
 import ActionButtons from './ActionButtons';
 
@@ -60,9 +59,17 @@ function ReservationComponent() {
     };
 
     return (
-        <div className="p-4">
-            <div className="flex mb-4 space-x-4">
-                <div>
+        <div className="p-4 bg-white rounded-lg shadow-lg">
+            {/* Responsive "Choose Your Reservation Period" Text */}
+            <div className="bg-gray-100 p-4 rounded-lg mb-4">
+                <h2 className="text-lg font-bold text-center sm:text-left text-black">
+                    Choose Your Reservation Period
+                </h2>
+            </div>
+
+            {/* Reservation Inputs */}
+            <div className="flex flex-col sm:flex-row mb-4 space-y-4 sm:space-y-0 sm:space-x-4">
+                <div className="flex flex-col sm:w-1/2">
                     <label className="text-gray-500 text-sm">DATE</label>
                     <div className="flex space-x-2">
                         <input
@@ -80,8 +87,9 @@ function ReservationComponent() {
                     </div>
                 </div>
             </div>
-            <div className="flex mb-4 space-x-4">
-                <div>
+
+            <div className="flex flex-col sm:flex-row mb-4 space-y-4 sm:space-y-0 sm:space-x-4">
+                <div className="flex flex-col sm:w-1/2">
                     <label className="text-gray-500 text-sm">TIME</label>
                     <div className="flex space-x-2">
                         <input
@@ -99,12 +107,13 @@ function ReservationComponent() {
                     </div>
                 </div>
             </div>
+
             <div className="flex items-center justify-between mt-4">
                 <span className="text-gray-600 font-semibold text-lg">TOTAL</span>
                 <span className="text-gray-900 font-bold text-lg">{total}</span>
             </div>
 
-            {/* Pass reservationDate, startTime, and endTime to ActionButtons */}
+            {/* Action Buttons */}
             <ActionButtons
                 reservationDate={reservationDate}
                 startDate={formattedStartDate}

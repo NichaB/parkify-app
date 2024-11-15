@@ -1,31 +1,25 @@
 "use client";
 import React, { useEffect, useState } from 'react';
-import PriceOption from '../components/PriceOption';
 import ContactInfo from '../components/ContactInfo';
-import BookingInfo from '../components/BookingInfo';
-import ActionButtons from '../components/ActionButtons';
 import CalculateInput from '../components/Booking_Calculate';
-import BackButton from '../components/BackButton';
-import supabase from '../../config/supabaseClient'; // Adjust the path as needed
 
 const ParkingDetail = () => {
-    const [parkingCode, setParkingCode] = useState(''); // For YWT001
-    const [price, setPrice] = useState(''); // For 300 THB / HOURS
+    const [parkingCode, setParkingCode] = useState('');
+    const [price, setPrice] = useState('');
 
     useEffect(() => {
-        // Fetch parking lot details from Supabase
         const fetchParkingDetails = async () => {
-            const { data, error } = await supabase
-                .from('parking_lot') // Replace with your actual table name
-                .select('location_name, price_per_hour') // Replace with actual column names
-                .eq('parking_lot_id', 1) // Adjust this condition based on your needs
-                .single();
+            try {
+                const response = await fetch('/api/parking?id=1'); // Replace '1' with the desired parking lot ID
+                if (!response.ok) {
+                    throw new Error('Failed to fetch parking details.');
+                }
 
-            if (error) {
+                const data = await response.json();
+                setParkingCode(data.parkingCode || 'N/A');
+                setPrice(data.price || 'N/A');
+            } catch (error) {
                 console.error('Error fetching parking details:', error);
-            } else {
-                setParkingCode(data.location_name); // Replace 'parking_code' with actual column name
-                setPrice(`${data.price_per_hour} THB / HOURS`); // Replace 'price_per_hour' with actual column name
             }
         };
 
@@ -33,23 +27,26 @@ const ParkingDetail = () => {
     }, []);
 
     return (
-        <div className="w-full max-w-md mx-auto bg-white shadow-lg rounded-lg p-4">
-            <img
-                src="parkinglots-image.jpg" // Replace with the actual image URL
-                alt="User Profile"
-                className="w-100 h-100 object-cover mb-4"
-            />
-            <div className="flex justify-between items-center mb-4">
-                <span className="bg-blue-500 text-white font-bold px-3 py-1 rounded-full">
-                    {parkingCode || 'Loading...'}
-                </span>
-                <span className="bg-green-500 text-white font-bold px-3 py-1 rounded-full">
-                    {price || 'Loading...'}
-                </span>
+        <div className="w-full h-full bg-gray-100 flex flex-col items-center py-8">
+            <div className="w-full max-w-screen-xl bg-white shadow-lg rounded-lg p-6 lg:p-12">
+                <img
+                    src="parkinglots-image.jpg"
+                    alt="Parking Lot"
+                    className="w-full h-96 object-cover rounded-lg mb-6"
+                />
+                <div className="flex flex-col sm:flex-row justify-between items-center mb-6 space-y-4 sm:space-y-0 sm:space-x-6">
+                    <span className="bg-blue-500 text-white font-bold px-4 py-2 rounded-full text-base lg:text-xl">
+                        {parkingCode || 'Loading...'}
+                    </span>
+                    <span className="bg-green-500 text-white font-bold px-4 py-2 rounded-full text-base lg:text-xl">
+                        {price || 'Loading...'}
+                    </span>
+                </div>
+                <div className="grid gap-8 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+                    <ContactInfo />
+                    <CalculateInput />
+                </div>
             </div>
-            <ContactInfo />
-            <PriceOption />
-            <CalculateInput />
         </div>
     );
 };

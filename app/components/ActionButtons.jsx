@@ -75,54 +75,47 @@ const ActionButtons = ({ reservationDate, startTime, endTime }) => {
     const handleConfirmClick = async () => {
         setIsConfirmPopupVisible(false);
 
-        const currentDate = new Date();
-        const offsetDate = new Date(currentDate.getTime() + 7 * 60 * 60 * 1000);
-
-        const formattedReservationDate = `${offsetDate.getFullYear()}-${String(offsetDate.getMonth() + 1).padStart(2, '0')}-${String(offsetDate.getDate()).padStart(2, '0')} ${String(offsetDate.getHours()).padStart(2, '0')}:${String(offsetDate.getMinutes()).padStart(2, '0')}:${String(offsetDate.getSeconds()).padStart(2, '0')} +07`;
-
-        if (!startDate || !endDate || !startTime || !endTime) {
-            console.error("Invalid date or time values:", { startDate, endDate, startTime, endTime });
+        if (!reservationDate || !startTime || !endTime) {
+            console.error('Missing required inputs.');
             return;
         }
 
         const start = new Date(`${startDate}T${startTime}:00+07:00`);
         const end = new Date(`${endDate}T${endTime}:00+07:00`);
-
-        if (isNaN(start.getTime()) || isNaN(end.getTime())) {
-            console.error("Error creating date objects:", { start, end });
-            return;
-        }
-
         const totalHours = Math.abs((end - start) / (1000 * 60 * 60));
         const calculatedTotalPrice = totalHours * pricePerHour;
-        setTotalPrice(calculatedTotalPrice); // Update totalPrice state
+        setTotalPrice(calculatedTotalPrice);
 
-        const startTimestamp = start.toISOString();
-        const endTimestamp = end.toISOString();
-
-        const { data, error } = await supabase
-            .from('reservation')
-            .insert([
-                {
-                    parking_lot_id: parkingLotId,
-                    user_id: userId,
-                    reservation_date: formattedReservationDate,
-                    start_time: startTimestamp,
-                    end_time: endTimestamp,
-                    total_price: calculatedTotalPrice,
-                    duration_hour: totalHours,
-                    duration_day: Math.floor(totalHours / 24),
-                    car_id: carId,
+        try {
+            const response = await fetch('/api/reservation', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
                 },
-            ]);
+                body: JSON.stringify({
+                    parkingLotId,
+                    userId,
+                    reservationDate,
+                    startTime,
+                    endTime,
+                    pricePerHour,
+                    carId,
+                }),
+            });
 
-        if (error) {
-            console.error("Error inserting reservation:", error.message);
-        } else {
-            console.log("Reservation successfully added:", data);
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Failed to create reservation.');
+            }
+
+            const responseData = await response.json();
+            console.log('Reservation successfully added:', responseData);
             setIsPaymentSuccessVisible(true);
+        } catch (error) {
+            console.error('Error confirming reservation:', error);
         }
     };
+
 
     return (
         <div className="flex justify-around mt-4">

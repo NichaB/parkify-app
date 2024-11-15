@@ -1,7 +1,5 @@
-// src/components/PaymentSuccess.js
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import supabase from '../../config/supabaseClient';
 
 const PaymentSuccess = ({ reservationDate, startTime, endTime, totalPrice }) => {
     const router = useRouter();
@@ -9,37 +7,22 @@ const PaymentSuccess = ({ reservationDate, startTime, endTime, totalPrice }) => 
     const [location, setLocation] = useState('Loading...');
 
     useEffect(() => {
-        const fetchData = async () => {
+        const fetchPaymentDetails = async () => {
             try {
-                const { data: userInfoData, error: userInfoError } = await supabase
-                    .from('user_info')
-                    .select('first_name, last_name')
-                    .eq('user_id', 27)
-                    .single();
-
-                if (userInfoError) {
-                    console.error('Error fetching booker name:', userInfoError);
-                } else {
-                    setBookerName(`${userInfoData.first_name} ${userInfoData.last_name}`);
+                const response = await fetch(`/api/payment-details?userId=27&parkingLotId=1`);
+                if (!response.ok) {
+                    throw new Error('Failed to fetch payment details');
                 }
 
-                const { data: parkingData, error: parkingError } = await supabase
-                    .from('parking_lot')
-                    .select('location_name')
-                    .eq('parking_lot_id', 1)
-                    .single();
-
-                if (parkingError) {
-                    console.error('Error fetching parking location:', parkingError);
-                } else {
-                    setLocation(parkingData.location_name);
-                }
+                const data = await response.json();
+                setBookerName(data.bookerName || 'N/A');
+                setLocation(data.location || 'N/A');
             } catch (error) {
-                console.error('Error fetching data:', error);
+                console.error('Error fetching payment details:', error);
             }
         };
 
-        fetchData();
+        fetchPaymentDetails();
     }, []);
 
     const handleClose = () => {
@@ -82,7 +65,6 @@ const PaymentSuccess = ({ reservationDate, startTime, endTime, totalPrice }) => 
                         <p className="text-gray-400 font-semibold">Booker Name</p>
                         <p>{bookerName}</p>
                     </div>
-
                 </div>
             </div>
         </div>
