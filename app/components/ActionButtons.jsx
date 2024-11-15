@@ -1,17 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import PaymentSuccess from './PaymentSuccess';
-import supabase from '../../config/supabaseClient';
 
 const ActionButtons = ({ reservationDate, startTime, endTime }) => {
     const [isConfirmPopupVisible, setIsConfirmPopupVisible] = useState(false);
     const [isPaymentSuccessVisible, setIsPaymentSuccessVisible] = useState(false);
-    const [location, setLocation] = useState(null);
-    const [contact, setContact] = useState(null);
-    const [pricePerHour, setPricePerHour] = useState(0); // Define pricePerHour state
-    const [totalPrice, setTotalPrice] = useState(0); // Define totalPrice state
+    const [location, setLocation] = useState('Loading...');
+    const [contact, setContact] = useState('Loading...');
+    const [pricePerHour, setPricePerHour] = useState(0);
+    const [totalPrice, setTotalPrice] = useState(0);
     const parkingLotId = 1;
+    const userId = 27;
     const carId = 4;
-    const userId = 33;
 
     // Helper function to format date from dd/mm/yyyy to yyyy-mm-dd
     const formatReservationDate = (date) => {
@@ -24,38 +23,26 @@ const ActionButtons = ({ reservationDate, startTime, endTime }) => {
         ? reservationDate.split(" - ").map(date => formatReservationDate(date.trim()))
         : [null, null];
 
+    // Fetch contact info and parking lot details
     useEffect(() => {
-        const fetchData = async () => {
-            // Fetch contact info
-            const { data: userData, error: userError } = await supabase
-                .from('user_info')
-                .select('phone_number')
-                .eq('user_id', userId)
-                .single();
+        const fetchDetails = async () => {
+            try {
+                const response = await fetch(`/api/fetchDetails?userId=${userId}&parkingLotId=${parkingLotId}`);
+                if (!response.ok) {
+                    throw new Error('Failed to fetch details');
+                }
 
-            if (userError) {
-                console.error('Error fetching data:', userError);
-            } else {
-                setContact(userData.phone_number);
-            }
-
-            // Fetch location and pricePerHour
-            const { data: locationData, error: locationError } = await supabase
-                .from('parking_lot')
-                .select('location_name, price_per_hour') // Fetch price per hour here
-                .eq('parking_lot_id', parkingLotId)
-                .single();
-
-            if (locationError) {
-                console.error('Error fetching location data:', locationError);
-            } else {
-                setLocation(locationData.location_name);
-                setPricePerHour(locationData.price_per_hour); // Set pricePerHour state
+                const data = await response.json();
+                setContact(data.phoneNumber || 'N/A');
+                setLocation(data.locationName || 'N/A');
+                setPricePerHour(data.pricePerHour || 0);
+            } catch (error) {
+                console.error('Error fetching details:', error);
             }
         };
 
-        fetchData();
-    }, []);
+        fetchDetails();
+    }, [userId, parkingLotId]);
 
     const allInputsFilled = reservationDate && startTime && endTime;
 
@@ -87,6 +74,16 @@ const ActionButtons = ({ reservationDate, startTime, endTime }) => {
         setTotalPrice(calculatedTotalPrice);
 
         try {
+            console.log('Data being sent to API:', {
+                parkingLotId,
+                userId,
+                reservationDate,
+                startTime,
+                endTime,
+                pricePerHour,
+                carId, // Hardcoded for now; update if dynamic
+            });
+
             const response = await fetch('/api/reservation', {
                 method: 'POST',
                 headers: {
@@ -98,8 +95,9 @@ const ActionButtons = ({ reservationDate, startTime, endTime }) => {
                     reservationDate,
                     startTime,
                     endTime,
+                    totalPrice,
                     pricePerHour,
-                    carId,
+                    carId, // Hardcoded for now
                 }),
             });
 
@@ -115,7 +113,6 @@ const ActionButtons = ({ reservationDate, startTime, endTime }) => {
             console.error('Error confirming reservation:', error);
         }
     };
-
 
     return (
         <div className="flex justify-around mt-4">
@@ -135,10 +132,10 @@ const ActionButtons = ({ reservationDate, startTime, endTime }) => {
                 <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center">
                     <div className="bg-white rounded-lg p-6 w-80 shadow-lg">
                         <h2 className="text-xl font-bold mb-2 text-black">Confirm Reservation</h2>
-                        <p><span className="font-semibold text-black">Location:</span> <span className='text-black'>{location || 'Loading...'}</span></p>
+                        <p><span className="font-semibold text-black">Location:</span> <span className='text-black'>{location}</span></p>
                         <p><span className="font-semibold text-black">Date:</span> <span className='text-black'>{reservationDate}</span></p>
                         <p><span className="font-semibold text-black">Time:</span> <span className='text-black'>{startTime} - {endTime}</span></p>
-                        <p><span className="font-semibold text-black">Contact:</span> <span className='text-black'>{"+66 " + contact || 'Loading...'}</span></p>
+                        <p><span className="font-semibold text-black">Contact:</span> <span className='text-black'>{"+66 " + contact}</span></p>
                         <p className="text-gray-500 text-sm mt-2">Please note that this information will be shared with the parking lot owner.</p>
 
                         <div className="flex justify-between mt-4">
@@ -160,7 +157,7 @@ const ActionButtons = ({ reservationDate, startTime, endTime }) => {
                     startTime={startTime}
                     endTime={endTime}
                     pricePerHour={pricePerHour}
-                    totalPrice={totalPrice} // Pass totalPrice to PaymentSuccess
+                    totalPrice={totalPrice}
                 />
             )}
         </div>

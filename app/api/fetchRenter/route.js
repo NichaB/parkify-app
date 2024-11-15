@@ -1,121 +1,50 @@
-// app/api/fetchRenter/route.js
-import sql from '../../../config/db';
+"use client";
+import React, { useEffect, useState } from 'react';
 
-// GET Renter Details
-export async function GET(req) {
-  const { searchParams } = new URL(req.url);
-  const renterId = searchParams.get('renterId');
-  console.log("Requested Renter ID:", renterId);  // Debugging output
+const ContactInfo = () => {
+  const [contact, setContact] = useState(null);
 
-  if (!renterId) {
-    return new Response(JSON.stringify({ error: 'Renter ID is required' }), { status: 400 });
-  }
+  useEffect(() => {
+    // Fetch contact information from the API
+    const fetchContact = async () => {
+      try {
+        const response = await fetch('/api/contact?id=9'); // Adjust ID as needed
+        if (!response.ok) {
+          throw new Error('Failed to fetch contact information');
+        }
 
-  try {
-    const renterResult = await sql`
-      SELECT user_id, first_name, last_name, phone_number, email, password
-      FROM user_info
-      WHERE user_id = ${renterId}
-    `;
-    console.log("Database query result:", renterResult);  // Debugging output
-
-    if (renterResult.length === 0) {
-      return new Response(JSON.stringify({ error: 'Renter not found' }), { status: 404 });
-    }
-
-    const renterDetails = renterResult[0];
-    return new Response(JSON.stringify({ renterDetails }), { status: 200 });
-  } catch (error) {
-    console.error('Database Error:', error);
-    return new Response(JSON.stringify({ error: 'Error fetching data' }), { status: 500 });
-  }
-}
-
-
-// app/api/fetchRenter/route.js
-
-export async function PUT(req) {
-  try {
-      const {
-          user_id,
-          first_name,
-          last_name,
-          phone_number,
-          email,
-          password,
-      } = await req.json();
-
-      if (!user_id) {
-          return new Response(
-              JSON.stringify({ error: "Renter ID is required" }),
-              { status: 400 }
-          );
+        const data = await response.json();
+        setContact(data);
+      } catch (error) {
+        console.error('Error fetching contact:', error);
       }
+    };
 
-      // Prepare data for updating
-      const updateData = {};
-      if (first_name) updateData.first_name = first_name;
-      if (last_name) updateData.last_name = last_name;
-      if (phone_number) updateData.phone_number = phone_number;
-      if (email) updateData.email = email;
-      if (password) updateData.password = password;
+    fetchContact();
+  }, []);
 
-      if (Object.keys(updateData).length === 0) {
-          return new Response(
-              JSON.stringify({ error: "At least one field must be updated" }),
-              { status: 400 }
-          );
-      }
+  return (
+    <div className="bg-gray-100 p-4 rounded-lg shadow-md flex flex-col sm:flex-row items-center space-y-4 sm:space-y-0 sm:space-x-4">
+      <img
+        src={contact ? contact.lessor_profile_pic : 'default_image.png'} // Use the fetched image URL or a default
+        alt="Contact"
+        className="w-20 h-20 rounded-full object-cover shadow-md"
+      />
+      <div className="text-center sm:text-left">
+        <h3 className="text-xl font-semibold text-black">
+          {contact ? (
+            <>
+              <span>{contact.lessor_firstname}</span>
+              <span className="ml-2">{contact.lessor_lastname}</span>
+            </>
+          ) : 'Loading...'}
+        </h3>
+        <p className="text-gray-500 text-sm sm:text-base">
+          {contact ? contact.lessor_phone_number : 'Loading...'}
+        </p>
+      </div>
+    </div>
+  );
+};
 
-      await sql`
-          UPDATE user_info
-          SET ${sql(updateData)}
-          WHERE user_id = ${user_id}
-      `;
-
-      return new Response(
-          JSON.stringify({ message: "Renter updated successfully" }),
-          { status: 200 }
-      );
-  } catch (error) {
-      console.error("Update Error:", error);
-      return new Response(
-          JSON.stringify({ error: "Error updating data" }),
-          { status: 500 }
-      );
-  }
-}
-
-
-
-// DELETE Renter
-export async function DELETE(req) {
-  const { searchParams } = new URL(req.url);
-  const renterId = searchParams.get('renterId');
-
-  if (!renterId) {
-    return new Response(JSON.stringify({ error: 'Renter ID is required' }), { status: 400 });
-  }
-
-  try {
-    const deleteResult = await sql`
-      DELETE FROM user_info WHERE user_id = ${renterId}
-      RETURNING user_id
-    `;
-
-    if (deleteResult.length === 0) {
-      return new Response(JSON.stringify({ error: 'Renter not found or could not be deleted' }), { status: 404 });
-    }
-
-    return new Response(JSON.stringify({ message: 'Renter deleted successfully' }), { status: 200 });
-  } catch (error) {
-    console.error('Delete Error:', error);
-    return new Response(
-      JSON.stringify({
-        error: 'Error deleting renter',
-        details: error.message,
-      }),
-      { status: 500 }
-    );
-  }
-}
+export default ContactInfo;

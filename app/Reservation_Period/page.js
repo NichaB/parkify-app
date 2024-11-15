@@ -10,7 +10,7 @@ const ParkingDetail = () => {
     useEffect(() => {
         const fetchParkingDetails = async () => {
             try {
-                const response = await fetch('/api/parking?id=1'); // Replace '1' with the desired parking lot ID
+                const response = await fetch('/api/parking?id=1'); // Mock Up parking_lot_id : 1
                 if (!response.ok) {
                     throw new Error('Failed to fetch parking details.');
                 }

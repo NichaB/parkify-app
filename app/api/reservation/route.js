@@ -1,5 +1,6 @@
 import sql from '../../../config/db';
 
+
 export async function POST(req) {
     try {
         // Parse the request body
@@ -13,8 +14,20 @@ export async function POST(req) {
             carId,
         } = await req.json();
 
+        // Log received data
+        console.log('Received Data:', {
+            parkingLotId,
+            userId,
+            reservationDate,
+            startTime,
+            endTime,
+            totalPrice,
+            pricePerHour,
+            carId,
+        });
+
         // Validate input
-        if (!parkingLotId || !userId || !reservationDate || !startTime || !endTime || !pricePerHour || !carId) {
+        if (!parkingLotId || !userId || !reservationDate || !startTime || !endTime || !totalPrice || !pricePerHour || !carId) {
             return new Response(
                 JSON.stringify({ error: 'All fields are required.' }),
                 { status: 400 }
@@ -31,6 +44,15 @@ export async function POST(req) {
         // Calculate total hours and price
         const totalHours = Math.abs((endDateTime - startDateTime) / (1000 * 60 * 60));
         const totalPrice = totalHours * pricePerHour;
+
+        // Log calculated data
+        console.log('Calculated Data:', {
+            reservationDateTime,
+            startDateTime: startDateTime.toISOString(),
+            endDateTime: endDateTime.toISOString(),
+            totalHours,
+            totalPrice,
+        });
 
         // Insert the reservation into the database
         const result = await sql`
@@ -59,6 +81,9 @@ export async function POST(req) {
             RETURNING reservation_id
         `;
 
+        // Log SQL query result
+        console.log('SQL Query Result:', result);
+
         if (result.length === 0) {
             return new Response(
                 JSON.stringify({ error: 'Reservation could not be created.' }),
@@ -73,8 +98,13 @@ export async function POST(req) {
         );
     } catch (error) {
         console.error('Error creating reservation:', error);
+
+        // Return detailed error response
         return new Response(
-            JSON.stringify({ error: 'Internal server error.' }),
+            JSON.stringify({
+                error: 'Internal server error.',
+                details: error.message, // Include error details
+            }),
             { status: 500 }
         );
     }

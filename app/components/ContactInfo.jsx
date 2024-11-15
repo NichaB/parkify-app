@@ -8,7 +8,7 @@ const ContactInfo = () => {
         // Fetch contact information from the API
         const fetchContact = async () => {
             try {
-                const response = await fetch('/api/contact?id=99'); // Adjust ID as needed
+                const response = await fetch('/api/contact?id=9'); // Adjust lessor_id here now 9 is Mockup !!
                 if (!response.ok) {
                     throw new Error('Failed to fetch contact information');
                 }
