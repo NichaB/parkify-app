@@ -15,10 +15,16 @@ export async function POST(req) {
 
     // Use raw SQL to check if the user exists with the provided password
     const userData = await sql`
-      SELECT user_id, password 
-      FROM user_info
-      WHERE email = ${email}
+    select
+  user_id,
+  email,
+  pgp_sym_decrypt (password::bytea, 'parkify-secret') as decrypted_password
+from
+  user_info
+where
+  email = ${email};
     `;
+    
 
     // Check if user exists
     if (userData.length === 0) {
@@ -27,12 +33,10 @@ export async function POST(req) {
         headers: { 'Content-Type': 'application/json' },
       });
     }
-
     const user = userData[0];
+    const isPasswordValid = password === user.decrypted_password;
 
-
-    // Check password (In production, ensure secure password handling)
-    if (user.password !== password) {
+    if (!isPasswordValid) {
       return new Response(JSON.stringify({ error: 'Invalid password' }), {
         status: 401,
         headers: { 'Content-Type': 'application/json' },

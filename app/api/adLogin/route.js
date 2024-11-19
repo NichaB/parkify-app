@@ -1,40 +1,79 @@
-// app/api/adminLogin/route.js
 import sql from '../../../config/db';
+import jwt from 'jsonwebtoken';
+import bcrypt from 'bcrypt';
+
+const JWT_SECRET = process.env.JWT_SECRET;
+const JWT_EXPIRY = process.env.JWT_EXPIRY || '1h';
+
+if (!JWT_SECRET) {
+  throw new Error('JWT_SECRET is not defined in environment variables.');
+}
 
 export async function POST(req) {
   try {
     const { email, password } = await req.json();
 
-    // Input validation
     if (!email || !password) {
-      return new Response(JSON.stringify({ error: "Email and password are required." }), { status: 400 });
+      return new Response(
+        JSON.stringify({ error: 'Email and password are required.' }),
+        {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' },
+        }
+      );
     }
 
-    // Fetch the admin user by email
     const adminResult = await sql`
-      SELECT admin_id, email, password
+      SELECT admin_id, email, pgp_sym_decrypt(password, 'parkify-secret') AS decrypted_password
       FROM admin
       WHERE email = ${email}
       LIMIT 1
     `;
 
-    // If no admin found with the email, return a generic error
     if (adminResult.length === 0) {
-      return new Response(JSON.stringify({ error: "Invalid email or password." }), { status: 401 });
+      return new Response(
+        JSON.stringify({ error: 'Invalid email or password.' }),
+        {
+          status: 401,
+          headers: { 'Content-Type': 'application/json' },
+        }
+      );
     }
 
     const admin = adminResult[0];
+    const isPasswordValid = password === admin.decrypted_password;
 
-    // Directly compare the provided password with the password in the database
-    if (password !== admin.password) {
-      return new Response(JSON.stringify({ error: "Invalid email or password." }), { status: 401 });
+    if (!isPasswordValid) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid email or password.' }),
+        {
+          status: 401,
+          headers: { 'Content-Type': 'application/json' },
+        }
+      );
     }
 
-    // If login is successful, return the admin_id
-    return new Response(JSON.stringify({ admin_id: admin.admin_id }), { status: 200 });
+    const token = jwt.sign(
+      { admin_id: admin.admin_id, email: admin.email },
+      JWT_SECRET,
+      { expiresIn: JWT_EXPIRY }
+    );
 
+    return new Response(
+      JSON.stringify({ token }),
+      {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      }
+    );
   } catch (error) {
-    console.error("Error during login:", error);
-    return new Response(JSON.stringify({ error: "An error occurred during login." }), { status: 500 });
+    console.error('Error during login:', error);
+    return new Response(
+      JSON.stringify({ error: 'An error occurred during login.' }),
+      {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' },
+      }
+    );
   }
 }

@@ -77,7 +77,7 @@ export default function LoginPage() {
         setFailedAttempts(prev => prev + 1);
 
         if (failedAttempts + 1 >= 3) {
-          const lockoutDuration = 30 * 1000; // 30 seconds lockout duration
+          const lockoutDuration = 5 * 1000; // 30 seconds lockout duration
           const lockoutEndTime = Date.now() + lockoutDuration;
           localStorage.setItem('lockoutEnd', lockoutEndTime);
           setLockoutTimeLeft(Math.ceil(lockoutDuration / 1000));

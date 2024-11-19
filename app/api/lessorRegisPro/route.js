@@ -33,17 +33,19 @@ export async function POST(req) {
       .getPublicUrl(fileName);
 
     const insertResult = await sql`
+
       INSERT INTO lessor (
         lessor_firstname, lessor_lastname, lessor_email, lessor_phone_number,
         lessor_password, lessor_line_url, lessor_profile_pic
       ) VALUES (
-        ${firstName}, ${lastName}, ${email}, ${phoneNumber},
-        ${password}, ${lineurl}, ${urlData.publicUrl}
+        ${firstName}, ${lastName}, ${email}, ${phoneNumber},pgp_sym_encrypt(${password},'parkify-secret'), ${lineurl}, ${urlData.publicUrl}
       ) RETURNING lessor_id
     `;
+    
 
     return new Response(JSON.stringify({ lessorId: insertResult[0].lessor_id }), { status: 200 });
-  } catch (error) {
+  } 
+    catch (error) {
     console.error('Registration error:', error);
     return new Response(JSON.stringify({ error: 'An error occurred during registration' }), { status: 500 });
   }

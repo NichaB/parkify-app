@@ -65,7 +65,7 @@ const LoginPage = () => {
 
     try {
       // Call the stored procedure in Supabase to check user login
-      const { data, error } = await supabase.rpc("check_user_login", {
+      const { data, error } = await supabase.rpc("check_user_login2", {
         user_email: email,
         user_password: password,
       });

@@ -1,47 +1,54 @@
-// app/api/verifyPassword/route.js
 import sql from '../../../config/db';
 
 export async function POST(req) {
-    try {
-        const { user_id, currentPassword } = await req.json();
+  try {
+    const { email, currentPassword } = await req.json();
 
-        if (!user_id || !currentPassword) {
-            return new Response(
-                JSON.stringify({ error: "User ID and current password are required" }),
-                { status: 400 }
-            );
-        }
-
-        // Query to get the stored password
-        const passwordVerification = await sql`
-            SELECT password FROM user_info WHERE user_id = ${user_id}
-        `;
-
-        if (passwordVerification.length === 0) {
-            return new Response(
-                JSON.stringify({ error: "User not found" }),
-                { status: 404 }
-            );
-        }
-
-        const storedPassword = passwordVerification[0].password;
-        if (storedPassword !== currentPassword) {
-            return new Response(
-                JSON.stringify({ error: "Current password is incorrect" }),
-                { status: 401 }
-            );
-        }
-
-        // Password matches
-        return new Response(
-            JSON.stringify({ message: "Password verified successfully" }),
-            { status: 200 }
-        );
-    } catch (error) {
-        console.error("Password Verification Error:", error);
-        return new Response(
-            JSON.stringify({ error: "Error verifying password" }),
-            { status: 500 }
-        );
+    // Validate input
+    if (!email || !currentPassword) {
+      return new Response(
+        JSON.stringify({ error: 'Email and current password are required.' }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
+      );
     }
+
+
+    // Query to get the stored password
+    const userData = await sql`
+      SELECT 
+        email,
+        pgp_sym_decrypt(password::bytea,'parkify-secret') AS decrypted_password
+      FROM user_info
+      WHERE email = ${email};
+    `;
+
+    // Check if user exists
+    if (userData.length === 0) {
+      return new Response(
+        JSON.stringify({ error: 'User not found' }),
+        { status: 404, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const user = userData[0];
+    const isPasswordValid = currentPassword === user.decrypted_password;
+
+    if (!isPasswordValid) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid email or password.' }),
+        { status: 401, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    return new Response(
+      JSON.stringify({ message: 'Password verified successfully.' }),
+      { status: 200, headers: { 'Content-Type': 'application/json' } }
+    );
+  } catch (error) {
+    console.error('Password Verification Error:', error);
+    return new Response(
+      JSON.stringify({ error: 'Error verifying password.', details: error.message }),
+      { status: 500, headers: { 'Content-Type': 'application/json' } }
+    );
+  }
 }

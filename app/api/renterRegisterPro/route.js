@@ -24,9 +24,10 @@ export async function POST(req) {
     // Insert the new renter into the database
     const insertResult = await sql`
       INSERT INTO user_info (first_name, last_name, email, phone_number, password)
-      VALUES (${firstName}, ${lastName}, ${email}, ${phoneNumber}, ${password})
+      VALUES (${firstName}, ${lastName}, ${email}, ${phoneNumber}, pgp_sym_encrypt(${password},'parkify-secret'))
       RETURNING user_id
     `;
+
 
     if (insertResult.length === 0) {
       return new Response(

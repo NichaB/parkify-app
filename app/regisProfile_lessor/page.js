@@ -85,7 +85,6 @@ export default function RegisterInformationPage() {
 
       sessionStorage.removeItem("userEmail");
       sessionStorage.removeItem("userPassword");
-
       sessionStorage.setItem("lessorId", result.lessorId);
 
       setShowSuccessPopup(true); // Show success popup
