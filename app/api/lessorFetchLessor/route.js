@@ -66,7 +66,13 @@ export async function PUT(req) {
     if (lessor_firstname) updateData.lessor_firstname = lessor_firstname;
     if (lessor_lastname) updateData.lessor_lastname = lessor_lastname;
     if (lessor_email) updateData.lessor_email = lessor_email;
-    if (lessor_password) updateData.lessor_password = lessor_password;
+    if (lessor_password) {
+      const encryptedPasswordResult = await sql`
+        SELECT pgp_sym_encrypt(${lessor_password}, 'parkify-secret') AS encrypted_password;
+      `;
+      updateData.password = encryptedPasswordResult[0].encrypted_password;
+    }
+  updateData.password = encryptedPasswordResult[0].encrypted_password;
     if (lessor_phone_number) updateData.lessor_phone_number = lessor_phone_number;
     if (lessor_line_url) updateData.lessor_line_url = lessor_line_url;
     if (lessor_profile_pic) updateData.lessor_profile_pic = lessor_profile_pic;

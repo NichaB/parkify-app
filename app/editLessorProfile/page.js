@@ -69,33 +69,51 @@ export default function EditLessor() {
     }
   };
 
+  
+
   const handlePasswordVerification = async () => {
     try {
-      const response = await fetch(`/api/lessorVerifyPassword`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const response = await fetch('/api/lessorVerifyPassword', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          lessor_id: lessorId,
+          lessor_id: lessorId, // Use the correct field name expected by the API
           currentPassword: currentPasswordInput,
         }),
       });
-
-      const result = await response.json();
-      if (!response.ok) {
-        // Show toast message if password verification fails
-        toast.error("Current password is incorrect");
+  
+      // Parse the response
+      let result;
+      try {
+        result = await response.json();
+      } catch (error) {
+        toast.error("Invalid response from server");
         return;
       }
-
-      // If verification is successful, allow password editing
+  
+      if (!response.ok) {
+        toast.error(result.error || "Password verification failed");
+        return; // Exit the function if verification fails
+      }
+  
+      // Password verified successfully, allow password editing
       setPasswordEditable(true);
       setShowPasswordModal(false);
       toast.success("You can now edit your password");
-    } catch {
-      // Show a generic toast error for unexpected issues
-      toast.error("An error occurred during password verification");
+  
+      // Optional: If you need to store the decrypted password
+      setRenterDetails((prev) => ({
+        ...prev,
+        password: result.decrypted_password, // Avoid storing unless necessary
+      }));
+    } catch (error) {
+      console.error("Password verification error:", error);
+      // Display a generic toast for unexpected issues
+      toast.error("An unexpected error occurred during password verification.");
     }
   };
+  
+  
 
   const handleSave = async () => {
     const payload = {

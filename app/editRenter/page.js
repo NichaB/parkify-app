@@ -67,33 +67,9 @@ export default function EditRenter() {
   };
 
   // Include currentPassword only if the password is being updated
- 
-    try {
-      const response = await fetch('/api/renterUpdate', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          user_id: userId, // Replace with the actual user ID
-          newPassword: currentPasswordInput ,
-        }),
-      });
-  
-      if (response.ok) {
-        // Handle successful password update
-        alert('Password updated successfully.');
-      } else {
-        // Handle errors
-        const errorData = await response.json();
-        alert(`Error: ${errorData.error}`);
-      }
-    } catch (error) {
-      console.error('Error updating password:', error);
-      alert('An unexpected error occurred.');
-    }
-  };
-
+  if (passwordEditable && renterDetails.password) {
+    payload.currentPassword = currentPasswordInput;
+  }
   
 
   try {
