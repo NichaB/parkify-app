@@ -15,7 +15,6 @@ export default function EditLessor() {
   const [currentPasswordInput, setCurrentPasswordInput] = useState("");
   const [showPasswordModal, setShowPasswordModal] = useState(false);
 
-  // Retrieve lessorId from sessionStorage
   useEffect(() => {
     const storedLessorId = sessionStorage.getItem("lessorId");
     if (storedLessorId) {
@@ -34,12 +33,9 @@ export default function EditLessor() {
     lessor_password: "Password",
   };
 
-  // Fetch lessor details
   const fetchLessorDetails = async () => {
     try {
-      const response = await fetch(
-        `/api/lessorFetchLessor?lessorId=${lessorId}`
-      );
+      const response = await fetch(`/api/lessorFetchLessor?lessorId=${lessorId}`);
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Error fetching data");
       setLessorDetails(data.lessorDetails || {});
@@ -52,9 +48,7 @@ export default function EditLessor() {
   };
 
   useEffect(() => {
-    if (lessorId) {
-      fetchLessorDetails();
-    }
+    if (lessorId) fetchLessorDetails();
   }, [lessorId]);
 
   const handleChange = (e) => {
@@ -63,13 +57,11 @@ export default function EditLessor() {
   };
 
   const handlePasswordFieldClick = () => {
-    if (!passwordEditable) {
+    if (!passwordEditable && !showPasswordModal) {
       setShowPasswordModal(true);
       toast("Please verify your current password first", { duration: 3000 });
     }
   };
-
-  
 
   const handlePasswordVerification = async () => {
     try {
@@ -77,19 +69,12 @@ export default function EditLessor() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          lessor_id: lessorId, // Use the correct field name expected by the API
+          lessor_id: lessorId,
           currentPassword: currentPasswordInput,
         }),
       });
   
-      // Parse the response
-      let result;
-      try {
-        result = await response.json();
-      } catch (error) {
-        toast.error("Invalid response from server");
-        return;
-      }
+      const result = await response.json();
   
       if (!response.ok) {
         toast.error(result.error || "Password verification failed");
@@ -100,19 +85,16 @@ export default function EditLessor() {
       setPasswordEditable(true);
       setShowPasswordModal(false);
       toast.success("You can now edit your password");
-  
-      // Optional: If you need to store the decrypted password
-      setRenterDetails((prev) => ({
+      setLessorDetails((prev) => ({
         ...prev,
-        password: result.decrypted_password, // Avoid storing unless necessary
-      }));
-    } catch (error) {
-      console.error("Password verification error:", error);
+        lessor_password: result.decrypted_password }));
+  
+    } catch(error) {
       // Display a generic toast for unexpected issues
       toast.error("An unexpected error occurred during password verification.");
     }
   };
-  
+
   
 
   const handleSave = async () => {
@@ -120,39 +102,37 @@ export default function EditLessor() {
       lessor_id: lessorId,
       ...lessorDetails,
     };
-
-    // Include currentPassword only if password editing is enabled
-    if (passwordEditable && lessorDetails.lessor_password) {
+  
+    // Include currentPassword only if the password is being updated
+    if (passwordEditable && lessorDetails.password) {
       payload.currentPassword = currentPasswordInput;
     }
-
+    
+  
     try {
-      const updateResponse = await fetch(`/api/lessorFetchLessor`, {
+      const updateResponse = await fetch(`../api/lessorFetchLessor`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-
+  
       if (!updateResponse.ok) {
         const errorText = await updateResponse.text();
-        console.error("Update failed:", errorText);
-        throw new Error(errorText || "Update failed");
+        toast.error(`Update failed: ${errorText || "Unknown error"}`);
+        return; // Exit the function if the update fails
       }
-
-      toast.success("Lessor details updated successfully!");
-
-      // Clear the password field after saving
+  
+      // Reset passwordEditable to hide password as "***"
+      setPasswordEditable(false);
       setLessorDetails((prev) => ({
         ...prev,
         lessor_password: "", // Clear the password field
       }));
-
-      // Reset password-related states
-      setPasswordEditable(false);
-      setCurrentPasswordInput("");
-    } catch (error) {
-      toast.error("Error saving data");
-      console.error("Save error:", error);
+  
+      toast.success("Renter details updated successfully!");
+    } catch {
+      // Display a generic toast error for unexpected issues
+      toast.error("An unexpected error occurred while saving data");
     }
   };
 
@@ -176,25 +156,18 @@ export default function EditLessor() {
                 {fieldLabels[field]}
               </label>
               <input
-                type={
-                  field === "lessor_password" && !passwordEditable
-                    ? "password"
-                    : "text"
-                }
+                type={field === "lessor_password" ? (passwordEditable ? "text" : "text") : "text"}
                 name={field}
                 value={
-                  field === "lessor_password" && !passwordEditable
-                    ? "******"
+                  field === "lessor_password" && !passwordEditable 
+                    ? "*****" // Display "***" when not editable
                     : lessorDetails[field] || ""
                 }
                 onChange={handleChange}
                 className="text-gray-800 text-right w-2/3 focus:outline-none bg-transparent"
                 readOnly={field === "lessor_password" && !passwordEditable}
-                onClick={() =>
-                  field === "lessor_password" && handlePasswordFieldClick()
-                }
+                onClick={() => field === "lessor_password" && handlePasswordFieldClick()}
               />
-
               <FaEdit className="ml-2 text-gray-400" />
             </div>
           ))}
@@ -211,15 +184,22 @@ export default function EditLessor() {
       </div>
       <BottomNav />
 
-      {/* Password Verification Modal */}
       {showPasswordModal && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
+        <div
+          className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50"
+          role="dialog"
+          aria-labelledby="passwordModalTitle"
+          aria-hidden={!showPasswordModal}
+        >
           <div className="bg-white p-6 rounded shadow-lg w-80">
-            <h2 className="text-lg font-semibold mb-4">
+            <h2
+              id="passwordModalTitle"
+              className="text-lg font-semibold mb-4"
+            >
               Enter Current Password
             </h2>
             <input
-              type="password"
+              type="password_lessor"
               placeholder="Current Password"
               value={currentPasswordInput}
               onChange={(e) => setCurrentPasswordInput(e.target.value)}

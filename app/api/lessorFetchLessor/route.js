@@ -19,25 +19,17 @@ export async function GET(req) {
       FROM lessor
       WHERE lessor_id = ${lessorId}
     `;
-    const lessorDetails = lessorResult[0];
+  
 
-    if (!lessorDetails) {
-      return new Response(
-        JSON.stringify({ error: 'Lessor not found' }),
-        { status: 404, headers: { 'Content-Type': 'application/json' } }
-      );
+    if (lessorResult.length === 0) {
+      console.log("No lessor found for ID:", lessorId);
+      return new Response(JSON.stringify({ error: "Renter not found" }), { status: 404 });
     }
 
-    return new Response(
-      JSON.stringify({ lessorDetails }),
-      { status: 200, headers: { 'Content-Type': 'application/json' } }
-    );
+    return new Response(JSON.stringify({ lessorDetails: lessorResult[0] }), { status: 200 });
   } catch (error) {
-    console.error('Database Error:', error);
-    return new Response(
-      JSON.stringify({ error: 'Error fetching data', details: error.message }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
-    );
+    console.error("Database Error:", error);
+    return new Response(JSON.stringify({ error: "Error fetching data" }), { status: 500 });
   }
 }
 
@@ -62,6 +54,8 @@ export async function PUT(req) {
       );
     }
 
+
+    
     const updateData = {};
     if (lessor_firstname) updateData.lessor_firstname = lessor_firstname;
     if (lessor_lastname) updateData.lessor_lastname = lessor_lastname;
@@ -70,9 +64,8 @@ export async function PUT(req) {
       const encryptedPasswordResult = await sql`
         SELECT pgp_sym_encrypt(${lessor_password}, 'parkify-secret') AS encrypted_password;
       `;
-      updateData.password = encryptedPasswordResult[0].encrypted_password;
+      updateData.lessor_password = encryptedPasswordResult[0].encrypted_password;
     }
-  updateData.password = encryptedPasswordResult[0].encrypted_password;
     if (lessor_phone_number) updateData.lessor_phone_number = lessor_phone_number;
     if (lessor_line_url) updateData.lessor_line_url = lessor_line_url;
     if (lessor_profile_pic) updateData.lessor_profile_pic = lessor_profile_pic;

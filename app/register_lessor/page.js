@@ -53,12 +53,12 @@ export default function RegisterPage() {
       if (!response.ok) {
         // Handle specific "Email already exists" case
         if (result.error === 'Email already exists') {
-          toast.error('This email is already registered.', { duration: 2000 });
+           toast.error(result.error || 'Failed to validate email',{duration: 1000,});
           return; // Stop further execution
         }
 
         // Handle other errors gracefully
-        toast.error(result.error || 'Email check failed');
+        toast.error(result.error || 'Failed to validate email',{duration: 1000,});
         return;
       }
 
@@ -69,6 +69,7 @@ export default function RegisterPage() {
       // Redirect to the profile page
       toast.success('Email is available! Redirecting...');
       router.push('/regisProfile_lessor');
+
     } catch (error) {
       console.error('Registration error:', error);
       toast.error('An unexpected error occurred. Please try again.');
